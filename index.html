@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Closetê • Vista o amanhã. Hoje.</title>
+<!--
+  CLOSETÊ – MVP (Produto Mínimo Viável)
+  Aplicativo de aluguel de roupas e looks. Arquivo único: HTML + CSS + JavaScript puro.
+  Sem frameworks, sem CDN, sem imagens externas, sem servidor. Funciona abrindo o arquivo ou no GitHub Pages.
+  Os dados ficam no localStorage do navegador (aluguéis, plano, peças divulgadas e carrinho).
+-->
+<style>
+/* ==========================================
+   ESTILOS: CORES E CONFIGURAÇÕES GERAIS
+   ========================================== */
+:root{
+  --fundo:#f8f5f2; --cartao:#ffffff; --texto:#282321; --suave:#6b605a;
+  --marca:#85563f; --marca-escura:#5f3b2a; --rosa:#d9a98f; --linha:#e6dcd5;
+  --verde:#2f7d4f; --vermelho:#b4442f;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; display:flex; justify-content:center;
+  background:linear-gradient(135deg,#efe6df,#d9cec6);
+  font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif; color:var(--texto);
+}
+/* Moldura do celular: até 430px e centralizada no desktop */
+.app{
+  width:100%; max-width:430px; min-height:100vh; background:var(--fundo);
+  position:relative; padding-bottom:84px; box-shadow:0 0 60px rgba(40,25,18,.18);
+}
+button{font-family:inherit;cursor:pointer}
+h1,h2,h3{margin:0}
+.titulo{font-family:Georgia,serif}
+
+/* ==========================================
+   ESTILOS: CABEÇALHO E PAINEL DE IMPACTO
+   ========================================== */
+.topo{position:sticky;top:0;z-index:5;background:#fff;padding:14px 18px 12px;border-bottom:1px solid var(--linha)}
+.topo-linha{display:flex;justify-content:space-between;align-items:center}
+.logo{font-family:Georgia,serif;font-size:27px;font-weight:700;letter-spacing:-1px}
+.logo span{color:var(--marca)}
+.slogan{font-size:11px;color:var(--suave);margin-top:1px}
+.btn-icone{position:relative;border:0;background:#f4eeea;width:46px;height:46px;border-radius:50%;font-size:20px}
+.selo{position:absolute;right:-2px;top:-2px;background:var(--marca);color:#fff;font-size:11px;min-width:20px;height:20px;border-radius:50%;display:grid;place-items:center}
+.busca{margin-top:12px;display:flex;gap:8px;align-items:center;background:#f7f2ef;border:1px solid var(--linha);padding:0 14px;border-radius:14px}
+.busca input{width:100%;border:0;outline:0;background:transparent;padding:13px 0;font-size:15px}
+
+.painel{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 18px 0}
+.card-impacto{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:11px 8px;text-align:center}
+.card-impacto small{display:block;font-size:11px;color:var(--suave)}
+.card-impacto strong{display:block;font-size:17px;margin-top:3px}
+.card-impacto.destaque strong{color:var(--verde)}
+
+/* ==========================================
+   ESTILOS: SEÇÕES, FILTROS E CATÁLOGO
+   ========================================== */
+.secao{padding:0 18px;margin-top:22px}
+.secao h2{font-size:19px;margin-bottom:10px;font-family:Georgia,serif}
+.filtros{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.filtros button{white-space:nowrap;border:1px solid var(--linha);background:#fff;border-radius:22px;padding:10px 15px;font-size:14px}
+.filtros button.ativo{background:var(--texto);color:#fff;border-color:var(--texto)}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.peca{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 5px 16px rgba(45,30,23,.07);display:flex;flex-direction:column}
+.foto{height:132px;display:flex;align-items:center;justify-content:center;font-size:56px;position:relative}
+.etiqueta{position:absolute;left:8px;bottom:8px;background:rgba(255,255,255,.92);padding:4px 8px;border-radius:9px;font-size:11px;font-weight:700}
+.etiqueta.parceira{background:var(--marca);color:#fff}
+.info{padding:11px;display:flex;flex-direction:column;gap:4px;flex:1}
+.info h3{font-size:14px}
+.info p{margin:0;font-size:12px;color:var(--suave)}
+.info .preco{font-weight:800;font-size:15px;margin-top:auto}
+.info .preco span{font-weight:400;font-size:11px;color:var(--suave)}
+.btn{border:0;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:700}
+.btn-marca{background:var(--marca);color:#fff}
+.btn-marca:hover{background:var(--marca-vv,var(--marca-escura))}
+.btn-escuro{background:var(--texto);color:#fff}
+.btn-claro{background:#f4eeea;color:var(--marca-escura)}
+.btn-largo{width:100%}
+.vazio{grid-column:1/-1;text-align:center;color:var(--suave);padding:24px;font-size:14px}
+
+/* ==========================================
+   ESTILOS: PLANOS, FORMULÁRIO E LISTAS
+   ========================================== */
+.plano{background:#fff;border:1px solid var(--linha);border-radius:18px;padding:15px;margin-bottom:10px}
+.plano.ativo{border:2px solid var(--marca)}
+.plano-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.plano h3{font-family:Georgia,serif;font-size:19px}
+.plano ul{margin:8px 0 12px;padding-left:18px;font-size:13px;color:var(--suave);line-height:1.5}
+.plano .valor{font-size:20px;font-weight:800;text-align:right}
+.plano .valor small{display:block;font-size:11px;font-weight:400;color:var(--suave)}
+.tag-pop{display:inline-block;background:#f4ebe6;color:var(--marca);font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;margin-bottom:5px}
+.formulario{background:#fff;border:1px solid var(--linha);border-radius:18px;padding:16px;display:grid;gap:12px}
+.formulario label{font-size:13px;font-weight:700;display:grid;gap:5px}
+.formulario input,.formulario select{border:1px solid var(--linha);border-radius:12px;padding:13px;font-size:15px;background:#fff;font-family:inherit}
+.linha-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.erro{color:var(--vermelho);font-size:13px;min-height:16px}
+.lista-item{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:13px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+.lista-item .emoji{font-size:30px}
+.lista-item .dados{flex:1;font-size:13px}
+.lista-item .dados strong{display:block;font-size:14px}
+.status{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;margin-top:4px}
+.status.ativo{background:#e3f2e9;color:var(--verde)}
+.status.devolvido{background:#eee9e5;color:var(--suave)}
+.btn-excluir{border:0;background:#f4eeea;color:var(--vermelho);width:38px;height:38px;border-radius:50%;font-size:16px}
+.aviso{font-size:12px;color:var(--suave);margin-top:8px}
+
+/* ==========================================
+   ESTILOS: MENU INFERIOR, JANELAS E AVISOS
+   ========================================== */
+.menu{position:fixed;bottom:0;width:100%;max-width:430px;height:72px;background:rgba(255,255,255,.96);border-top:1px solid var(--linha);display:flex;justify-content:space-around;align-items:center;z-index:10}
+.menu button{border:0;background:none;color:var(--suave);font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:64px;padding:6px}
+.menu button b{font-size:21px}
+.menu button.ativo{color:var(--marca)}
+.janela-fundo{position:fixed;inset:0;background:rgba(25,19,16,.45);z-index:30;display:none;align-items:flex-end;justify-content:center}
+.janela-fundo.aberta{display:flex}
+.janela{background:#fff;width:100%;max-width:430px;max-height:85vh;overflow:auto;border-radius:26px 26px 0 0;padding:20px}
+.janela-topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.fechar{border:0;background:#f4eeea;border-radius:50%;width:38px;height:38px;font-size:16px}
+.total{display:flex;justify-content:space-between;font-weight:800;font-size:17px;padding:12px 0}
+.pix{background:#f7f2ef;border:1px dashed var(--marca);border-radius:12px;padding:12px;font-size:12px;word-break:break-all;color:var(--suave);margin:10px 0}
+.aviso-flutuante{position:fixed;left:50%;bottom:90px;transform:translate(-50%,10px);background:#2b2421;color:#fff;padding:13px 16px;border-radius:14px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:380px;width:calc(100% - 36px);text-align:center}
+.aviso-flutuante.mostrar{opacity:1;transform:translate(-50%,0)}
+/* Chat da Tetê */
+.chat{display:grid;gap:8px;max-height:46vh;overflow:auto;margin-bottom:12px}
+.balao{padding:11px 14px;border-radius:16px;font-size:14px;line-height:1.4;max-width:88%}
+.balao.eu{background:#efe6df;justify-self:end}
+.balao.tete{background:var(--marca);color:#fff}
+.chat-form{display:flex;gap:8px}
+.chat-form input{flex:1;border:1px solid var(--linha);border-radius:12px;padding:13px;font-size:15px}
+.sugestoes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.sugestoes button{border:1px solid var(--linha);background:#fff;border-radius:16px;padding:7px 11px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ==========================================
+       HTML: CABEÇALHO, BUSCA E PAINEL DE IMPACTO
+       ========================================== -->
+  <header class="topo">
+    <div class="topo-linha">
+      <div>
+        <div class="logo">Closet<span>ê</span></div>
+        <div class="slogan">Vista o amanhã. Hoje.</div>
+      </div>
+      <button class="btn-icone" onclick="abrirCarrinho()" aria-label="Abrir carrinho">🛍️<span class="selo" id="seloCarrinho">0</span></button>
+    </div>
+    <label class="busca">⌕
+      <input id="campoBusca" placeholder="Buscar vestido, blazer, conjunto..." oninput="mostrarCatalogo()">
+    </label>
+  </header>
+
+  <section class="painel" aria-label="Meu impacto">
+    <div class="card-impacto"><small>Peças alugadas</small><strong id="impPecas">0</strong></div>
+    <div class="card-impacto"><small>Em uso agora</small><strong id="impAtivos">0</strong></div>
+    <div class="card-impacto destaque"><small>Economia</small><strong id="impEconomia">R$ 0</strong></div>
+  </section>
+
+  <!-- ==========================================
+       HTML: ABA CATÁLOGO
+       ========================================== -->
+  <main>
+  <section class="secao" id="aba-catalogo">
+    <h2>Encontre seu look</h2>
+    <div class="filtros" id="filtrosOcasiao"></div>
+    <div class="filtros" id="filtrosTamanho"></div>
+    <div class="grade" id="gradePecas"></div>
+  </section>
+
+  <!-- ==========================================
+       HTML: ABA MEUS ALUGUÉIS
+       ========================================== -->
+  <section class="secao" id="aba-alugueis" hidden>
+    <h2>Meus aluguéis</h2>
+    <div id="listaAlugueis"></div>
+    <button class="btn btn-claro btn-largo" onclick="exportarCSV()">⬇ Exportar aluguéis (CSV)</button>
+    <p class="aviso">O CSV abre direto no Excel. Os dados ficam só neste navegador.</p>
+  </section>
+
+  <!-- ==========================================
+       HTML: ABA PLANOS
+       ========================================== -->
+  <section class="secao" id="aba-planos" hidden>
+    <h2>Planos de assinatura</h2>
+    <div id="listaPlanos"></div>
+    <p class="aviso">Aluguel avulso continua disponível sem assinatura.</p>
+  </section>
+
+  <!-- ==========================================
+       HTML: ABA DIVULGUE SUAS ROUPAS (LOJA PARCEIRA)
+       ========================================== -->
+  <section class="secao" id="aba-divulgar" hidden>
+    <h2>Divulgue suas roupas</h2>
+    <form class="formulario" id="formDivulgar" onsubmit="cadastrarPeca(event)">
+      <label>Nome da peça
+        <input id="divNome" placeholder="Ex.: Vestido Aurora" maxlength="40">
+      </label>
+      <div class="linha-form">
+        <label>Ocasião
+          <select id="divOcasiao"></select>
+        </label>
+        <label>Tamanho
+          <select id="divTamanho"><option>P</option><option>M</option><option>G</option></select>
+        </label>
+      </div>
+      <label>Preço do aluguel (R$ por 4 dias)
+        <input id="divPreco" type="number" min="1" step="0.01" placeholder="Ex.: 89,90">
+      </label>
+      <div class="erro" id="divErro"></div>
+      <button class="btn btn-marca" type="submit">Cadastrar peça</button>
+      <p class="aviso" style="margin:0">A loja parceira recebe comissão a cada locação (sistema de comissão: etapa futura).</p>
+    </form>
+    <h2 style="margin-top:22px">Minhas peças divulgadas</h2>
+    <div id="listaMinhasPecas"></div>
+  </section>
+  </main>
+
+  <!-- ==========================================
+       HTML: MENU INFERIOR
+       ========================================== -->
+  <nav class="menu">
+    <button class="ativo" data-aba="catalogo" onclick="trocarAba('catalogo')"><b>♡</b>Looks</button>
+    <button data-aba="alugueis" onclick="trocarAba('alugueis')"><b>🧾</b>Aluguéis</button>
+    <button data-aba="planos" onclick="trocarAba('planos')"><b>★</b>Planos</button>
+    <button data-aba="divulgar" onclick="trocarAba('divulgar')"><b>👗</b>Divulgar</button>
+    <button onclick="abrirChat()"><b>💬</b>Tetê</button>
+  </nav>
+
+  <!-- ==========================================
+       HTML: JANELA DO CARRINHO E DO PIX
+       ========================================== -->
+  <div class="janela-fundo" id="janelaCarrinho" onclick="if(event.target===this)fecharJanelas()">
+    <div class="janela">
+      <div class="janela-topo"><h2 class="titulo" id="tituloCarrinho">Seu carrinho</h2><button class="fechar" onclick="fecharJanelas()">✕</button></div>
+      <div id="etapaCarrinho">
+        <div id="listaCarrinho"></div>
+        <div class="total"><span>Total</span><span id="totalCarrinho">R$ 0,00</span></div>
+        <p class="aviso" id="avisoDesconto"></p>
+        <button class="btn btn-escuro btn-largo" onclick="irParaPix()">Continuar e pagar via Pix</button>
+      </div>
+      <div id="etapaPix" hidden>
+        <p style="font-size:14px;margin:0">Pague <strong id="valorPix"></strong> com Pix. Em um app real, o QR Code viria do gateway de pagamento.</p>
+        <div class="pix" id="codigoPix"></div>
+        <button class="btn btn-marca btn-largo" onclick="confirmarPagamento()">Simular pagamento aprovado</button>
+        <button class="btn btn-claro btn-largo" style="margin-top:8px" onclick="voltarCarrinho()">Voltar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       HTML: JANELA DO CHATBOT TETÊ
+       ========================================== -->
+  <div class="janela-fundo" id="janelaChat" onclick="if(event.target===this)fecharJanelas()">
+    <div class="janela">
+      <div class="janela-topo"><h2 class="titulo">Tetê, assistente virtual</h2><button class="fechar" onclick="fecharJanelas()">✕</button></div>
+      <div class="chat" id="conversa"></div>
+      <div class="sugestoes">
+        <button onclick="perguntarTete('Quanto custa?')">Quanto custa?</button>
+        <button onclick="perguntarTete('Como devolvo?')">Como devolvo?</button>
+        <button onclick="perguntarTete('Como funciona o provador?')">Provador</button>
+      </div>
+      <form class="chat-form" onsubmit="enviarChat(event)">
+        <input id="campoChat" placeholder="Digite sua pergunta..." autocomplete="off">
+        <button class="btn btn-marca" type="submit">Enviar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="aviso-flutuante" id="aviso"></div>
+</div>
+
+<script>
+// ==========================================
+// CONFIGURAÇÕES E VARIÁVEIS
+// ==========================================
+const OCASIOES = ["Casamento", "Formatura", "Trabalho", "Festa"];
+const TAMANHOS = ["P", "M", "G"];
+const DIAS_ALUGUEL = 4;
+const FATOR_COMPRA = 3; // hipótese: comprar a peça custaria ~3x o aluguel (usado no card de economia)
+
+// Peças iniciais (catálogo da Closetê). Emojis no lugar de fotos para não depender de internet.
+const PECAS_BASE = [
+  { id: "b1", nome: "Vestido Aurora", ocasiao: "Casamento", tamanho: "M", preco: 99.90, emoji: "👗", cor: "#f3d9cc" },
+  { id: "b2", nome: "Vestido Luna",   ocasiao: "Formatura", tamanho: "P", preco: 109.90, emoji: "👗", cor: "#e7d0e0" },
+  { id: "b3", nome: "Blazer Paris",   ocasiao: "Trabalho",  tamanho: "M", preco: 69.90,  emoji: "🧥", cor: "#d7dfe8" },
+  { id: "b4", nome: "Conjunto Siena", ocasiao: "Festa",     tamanho: "G", preco: 79.90,  emoji: "👚", cor: "#f0e2c3" },
+  { id: "b5", nome: "Blazer Milano",  ocasiao: "Trabalho",  tamanho: "G", preco: 72.90,  emoji: "🧥", cor: "#d9e6d6" },
+  { id: "b6", nome: "Conjunto Mia",   ocasiao: "Festa",     tamanho: "P", preco: 84.90,  emoji: "👚", cor: "#f2d3d9" }
+];
+
+const PLANOS = [
+  { nome: "BASIC",   preco: 79.90,  itens: ["2 peças por mês", "Entrega padrão"] },
+  { nome: "PLUS",    preco: 129.90, itens: ["4 peças por mês", "Frete grátis", "10% de desconto em aluguéis extras"], popular: true },
+  { nome: "PREMIUM", preco: 199.90, itens: ["Peças ilimitadas (1 por vez)", "Frete grátis", "Acesso antecipado a novas peças", "15% de desconto em aluguéis extras"] }
+];
+const DESCONTO_PLANO = { "": 0, "BASIC": 0, "PLUS": 0.10, "PREMIUM": 0.15 };
+
+let filtroOcasiao = "Todas";
+let filtroTamanho = "Todos";
+
+// ==========================================
+// LOCALSTORAGE (carregar e salvar dados)
+// ==========================================
+// Tudo é guardado em um único objeto. Se o navegador bloquear o localStorage, o app continua funcionando só na memória.
+const CHAVE = "closete-mvp-v1";
+let dados = { carrinho: [], alugueis: [], pecasDivulgadas: [], plano: "" };
+
+function carregarDados() {
+  try {
+    const texto = localStorage.getItem(CHAVE);
+    if (texto) dados = Object.assign(dados, JSON.parse(texto));
+  } catch (erro) { /* sem localStorage: segue em memória */ }
+}
+function salvarDados() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(dados)); } catch (erro) { /* ignora */ }
+}
+
+// ==========================================
+// FUNÇÕES AUXILIARES
+// ==========================================
+function dinheiro(valor) {
+  return "R$ " + valor.toFixed(2).replace(".", ",");
+}
+function dataBR(data) {
+  const d = new Date(data);
+  return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
+}
+function todasAsPecas() {
+  return PECAS_BASE.concat(dados.pecasDivulgadas);
+}
+function acharPeca(id) {
+  return todasAsPecas().find(p => p.id === id);
+}
+function escapar(texto) {
+  // evita que o texto digitado vire código HTML
+  return String(texto).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function mostrarAviso(mensagem) {
+  const aviso = document.getElementById("aviso");
+  aviso.textContent = mensagem;
+  aviso.classList.add("mostrar");
+  clearTimeout(window.tempoAviso);
+  window.tempoAviso = setTimeout(() => aviso.classList.remove("mostrar"), 2400);
+}
+
+// ==========================================
+// CATÁLOGO: FILTROS, BUSCA E CARTÕES DAS PEÇAS
+// ==========================================
+function montarFiltros() {
+  const caixaOcasiao = document.getElementById("filtrosOcasiao");
+  caixaOcasiao.innerHTML = ["Todas"].concat(OCASIOES).map(o =>
+    `<button class="${o === filtroOcasiao ? "ativo" : ""}" onclick="escolherOcasiao('${o}')">${o}</button>`).join("");
+  const caixaTamanho = document.getElementById("filtrosTamanho");
+  caixaTamanho.innerHTML = ["Todos"].concat(TAMANHOS).map(t =>
+    `<button class="${t === filtroTamanho ? "ativo" : ""}" onclick="escolherTamanho('${t}')">${t === "Todos" ? "Todos os tamanhos" : "Tam. " + t}</button>`).join("");
+  document.getElementById("divOcasiao").innerHTML = OCASIOES.map(o => `<option>${o}</option>`).join("");
+}
+function escolherOcasiao(o) { filtroOcasiao = o; montarFiltros(); mostrarCatalogo(); }
+function escolherTamanho(t) { filtroTamanho = t; montarFiltros(); mostrarCatalogo(); }
+
+function mostrarCatalogo() {
+  const busca = document.getElementById("campoBusca").value.trim().toLowerCase();
+  const lista = todasAsPecas().filter(p =>
+    (filtroOcasiao === "Todas" || p.ocasiao === filtroOcasiao) &&
+    (filtroTamanho === "Todos" || p.tamanho === filtroTamanho) &&
+    (p.nome.toLowerCase().includes(busca) || p.ocasiao.toLowerCase().includes(busca)));
+  const grade = document.getElementById("gradePecas");
+  if (!lista.length) { grade.innerHTML = '<div class="vazio">Nenhuma peça encontrada. Tente outra ocasião ou tamanho.</div>'; return; }
+  grade.innerHTML = lista.map(p => {
+    const alugada = dados.alugueis.some(a => a.pecaId === p.id && a.status === "Em uso");
+    const noCarrinho = dados.carrinho.includes(p.id);
+    const botao = alugada ? '<button class="btn btn-claro" disabled>Indisponível</button>'
+      : noCarrinho ? '<button class="btn btn-claro" onclick="abrirCarrinho()">No carrinho ✓</button>'
+      : `<button class="btn btn-marca" onclick="adicionarAoCarrinho('${p.id}')">+ Alugar</button>`;
+    return `<article class="peca">
+      <div class="foto" style="background:${p.cor}">${p.emoji}
+        <span class="etiqueta ${p.parceira ? "parceira" : ""}">${p.parceira ? "Loja parceira" : p.ocasiao}</span></div>
+      <div class="info"><h3>${escapar(p.nome)}</h3>
+        <p>${p.ocasiao} • Tam. ${p.tamanho}</p>
+        <div class="preco">${dinheiro(p.preco)} <span>/ ${DIAS_ALUGUEL} dias</span></div>
+        ${botao}</div></article>`;
+  }).join("");
+}
+
+// ==========================================
+// CARRINHO E PAGAMENTO VIA PIX (SIMULADO)
+// ==========================================
+function adicionarAoCarrinho(id) {
+  if (dados.carrinho.includes(id)) return mostrarAviso("Essa peça já está no carrinho");
+  dados.carrinho.push(id);
+  salvarDados(); atualizarTela();
+  mostrarAviso("Peça adicionada ao carrinho ✨");
+}
+function removerDoCarrinho(id) {
+  dados.carrinho = dados.carrinho.filter(x => x !== id);
+  salvarDados(); atualizarTela(); desenharCarrinho();
+}
+function calcularTotal() {
+  const subtotal = dados.carrinho.reduce((soma, id) => soma + (acharPeca(id) ? acharPeca(id).preco : 0), 0);
+  const desconto = subtotal * (DESCONTO_PLANO[dados.plano] || 0);
+  return { subtotal: subtotal, desconto: desconto, total: subtotal - desconto };
+}
+function desenharCarrinho() {
+  const lista = document.getElementById("listaCarrinho");
+  const itens = dados.carrinho.map(acharPeca).filter(Boolean);
+  lista.innerHTML = itens.length ? itens.map(p => `
+    <div class="lista-item"><div class="emoji">${p.emoji}</div>
+      <div class="dados"><strong>${escapar(p.nome)}</strong>${DIAS_ALUGUEL} dias • ${dinheiro(p.preco)}</div>
+      <button class="btn-excluir" onclick="removerDoCarrinho('${p.id}')" aria-label="Remover">✕</button></div>`).join("")
+    : '<div class="vazio" style="padding:18px">Seu carrinho está vazio.</div>';
+  const c = calcularTotal();
+  document.getElementById("totalCarrinho").textContent = dinheiro(c.total);
+  document.getElementById("avisoDesconto").textContent = c.desconto > 0
+    ? `Desconto do plano ${dados.plano}: -${dinheiro(c.desconto)}` : "";
+}
+function abrirCarrinho() {
+  voltarCarrinho(); desenharCarrinho();
+  document.getElementById("janelaCarrinho").classList.add("aberta");
+}
+function voltarCarrinho() {
+  document.getElementById("etapaCarrinho").hidden = false;
+  document.getElementById("etapaPix").hidden = true;
+  document.getElementById("tituloCarrinho").textContent = "Seu carrinho";
+}
+function irParaPix() {
+  if (!dados.carrinho.length) return mostrarAviso("Adicione pelo menos uma peça");
+  const c = calcularTotal();
+  document.getElementById("valorPix").textContent = dinheiro(c.total);
+  document.getElementById("codigoPix").textContent = "00020126580014br.gov.bcb.pix0136closete-demo-" + Date.now() + "5204000053039865802BR5908CLOSETE6009SAOPAULO";
+  document.getElementById("etapaCarrinho").hidden = true;
+  document.getElementById("etapaPix").hidden = false;
+  document.getElementById("tituloCarrinho").textContent = "Pagamento via Pix";
+}
+function confirmarPagamento() {
+  // Cada peça do carrinho vira um aluguel salvo em "Meus aluguéis".
+  const hoje = new Date();
+  const devolucao = new Date(); devolucao.setDate(hoje.getDate() + DIAS_ALUGUEL);
+  dados.carrinho.forEach(id => {
+    const p = acharPeca(id);
+    if (!p) return;
+    const desconto = DESCONTO_PLANO[dados.plano] || 0;
+    dados.alugueis.unshift({
+      codigo: "CL" + String(Date.now()).slice(-6) + id,
+      pecaId: id, nome: p.nome, emoji: p.emoji,
+      valor: p.preco * (1 - desconto), valorCheio: p.preco,
+      inicio: hoje.toISOString(), devolucao: devolucao.toISOString(),
+      status: "Em uso", parceira: !!p.parceira
+    });
+  });
+  dados.carrinho = [];
+  salvarDados(); fecharJanelas(); atualizarTela();
+  mostrarAviso("Pagamento aprovado! Veja em Aluguéis 🎉");
+  trocarAba("alugueis");
+}
+
+// ==========================================
+// MEUS ALUGUÉIS, DEVOLUÇÃO E PAINEL DE IMPACTO
+// ==========================================
+function desenharAlugueis() {
+  const caixa = document.getElementById("listaAlugueis");
+  caixa.innerHTML = dados.alugueis.length ? dados.alugueis.map(a => `
+    <div class="lista-item"><div class="emoji">${a.emoji}</div>
+      <div class="dados"><strong>${escapar(a.nome)}</strong>
+        ${dataBR(a.inicio)} → devolver até ${dataBR(a.devolucao)}<br>${dinheiro(a.valor)}
+        <span class="status ${a.status === "Em uso" ? "ativo" : "devolvido"}">${a.status}</span></div>
+      ${a.status === "Em uso" ? `<button class="btn btn-claro" onclick="devolver('${a.codigo}')">Devolver</button>` : ""}
+    </div>`).join("")
+    : '<div class="vazio" style="padding:18px">Você ainda não alugou nenhuma peça.</div>';
+}
+function devolver(codigo) {
+  const aluguel = dados.alugueis.find(a => a.codigo === codigo);
+  if (!aluguel) return;
+  aluguel.status = "Devolvido";
+  salvarDados(); atualizarTela();
+  mostrarAviso("Devolução registrada. A loja vai conferir e higienizar a peça.");
+}
+function atualizarImpacto() {
+  const total = dados.alugueis.length;
+  const ativos = dados.alugueis.filter(a => a.status === "Em uso").length;
+  const economia = dados.alugueis.reduce((s, a) => s + a.valorCheio * (FATOR_COMPRA - 1), 0);
+  document.getElementById("impPecas").textContent = total;
+  document.getElementById("impAtivos").textContent = ativos;
+  document.getElementById("impEconomia").textContent = "R$ " + Math.round(economia);
+}
+
+// ==========================================
+// EXPORTAÇÃO CSV (abre no Excel)
+// ==========================================
+function exportarCSV() {
+  if (!dados.alugueis.length) return mostrarAviso("Nenhum aluguel para exportar");
+  const cabecalho = ["Codigo", "Peca", "Data de inicio", "Devolver ate", "Valor pago", "Status"];
+  const linhas = dados.alugueis.map(a =>
+    [a.codigo, a.nome, dataBR(a.inicio), dataBR(a.devolucao), a.valor.toFixed(2).replace(".", ","), a.status]
+      .map(v => '"' + String(v).replace(/"/g, '""') + '"').join(";"));
+  // BOM (﻿) + ponto e vírgula: o Excel em português abre com acentos corretos e colunas separadas.
+  const conteudo = "﻿" + [cabecalho.join(";")].concat(linhas).join("\r\n");
+  const arquivo = new Blob([conteudo], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(arquivo);
+  link.download = "closete-alugueis.csv";
+  document.body.appendChild(link); link.click(); link.remove();
+  mostrarAviso("Arquivo CSV baixado ✅");
+}
+
+// ==========================================
+// PLANOS DE ASSINATURA
+// ==========================================
+function desenharPlanos() {
+  document.getElementById("listaPlanos").innerHTML = PLANOS.map(p => `
+    <div class="plano ${dados.plano === p.nome ? "ativo" : ""}">
+      <div class="plano-topo"><div>${p.popular ? '<span class="tag-pop">MAIS POPULAR</span>' : ""}<h3>${p.nome}</h3></div>
+        <div class="valor">${dinheiro(p.preco)}<small>/mês</small></div></div>
+      <ul>${p.itens.map(i => `<li>${i}</li>`).join("")}</ul>
+      ${dados.plano === p.nome
+        ? '<button class="btn btn-claro btn-largo" onclick="assinar(\'\')">Plano ativo – cancelar</button>'
+        : `<button class="btn btn-marca btn-largo" onclick="assinar('${p.nome}')">Assinar ${p.nome}</button>`}
+    </div>`).join("");
+}
+function assinar(nome) {
+  dados.plano = nome;
+  salvarDados(); desenharPlanos();
+  mostrarAviso(nome ? "Plano " + nome + " ativado ✨" : "Assinatura cancelada");
+}
+
+// ==========================================
+// DIVULGUE SUAS ROUPAS (CADASTRO DA LOJA PARCEIRA)
+// ==========================================
+function cadastrarPeca(evento) {
+  evento.preventDefault();
+  const nome = document.getElementById("divNome").value.trim();
+  const ocasiao = document.getElementById("divOcasiao").value;
+  const tamanho = document.getElementById("divTamanho").value;
+  const preco = parseFloat(String(document.getElementById("divPreco").value).replace(",", "."));
+  const erro = document.getElementById("divErro");
+  // Validações básicas
+  if (!nome) { erro.textContent = "Informe o nome da peça."; return; }
+  if (isNaN(preco) || preco <= 0) { erro.textContent = "Informe um preço maior que zero."; return; }
+  erro.textContent = "";
+  dados.pecasDivulgadas.unshift({ id: "p" + Date.now(), nome: nome, ocasiao: ocasiao, tamanho: tamanho,
+    preco: preco, emoji: "✨", cor: "#e9e2f3", parceira: true });
+  salvarDados();
+  document.getElementById("formDivulgar").reset();
+  atualizarTela();
+  mostrarAviso("Peça cadastrada! Ela já aparece em Looks.");
+}
+function excluirPecaDivulgada(id) {
+  if (!confirm("Excluir esta peça do catálogo?")) return;
+  dados.pecasDivulgadas = dados.pecasDivulgadas.filter(p => p.id !== id);
+  dados.carrinho = dados.carrinho.filter(x => x !== id);
+  salvarDados(); atualizarTela();
+}
+function desenharMinhasPecas() {
+  const caixa = document.getElementById("listaMinhasPecas");
+  caixa.innerHTML = dados.pecasDivulgadas.length ? dados.pecasDivulgadas.map(p => `
+    <div class="lista-item"><div class="emoji">${p.emoji}</div>
+      <div class="dados"><strong>${escapar(p.nome)}</strong>${p.ocasiao} • Tam. ${p.tamanho} • ${dinheiro(p.preco)}</div>
+      <button class="btn-excluir" onclick="excluirPecaDivulgada('${p.id}')" aria-label="Excluir">✕</button></div>`).join("")
+    : '<div class="vazio" style="padding:18px">Nenhuma peça cadastrada ainda.</div>';
+}
+
+// ==========================================
+// CHATBOT TETÊ (regras por palavra-chave, como o chatbot em Python com NLTK)
+// ==========================================
+const RESPOSTAS_TETE = [
+  { chaves: ["oi", "olá", "ola", "bom dia", "boa tarde", "boa noite"], resposta: "Oi! Eu sou a Tetê, assistente da Closetê. Posso falar de preços, planos, entrega, devolução e provador." },
+  { chaves: ["custa", "preço", "preco", "valor", "plano", "assinatura"], resposta: "Os planos são BASIC (R$ 79,90), PLUS (R$ 129,90) e PREMIUM (R$ 199,90) por mês. Também há aluguel avulso, a partir de cerca de R$ 70 por 4 dias." },
+  { chaves: ["devol", "devolver", "devolução"], resposta: "Para devolver, abra Aluguéis e toque em Devolver. A logística coleta a peça e a loja parceira confere e higieniza." },
+  { chaves: ["provador", "tamanho", "medida", "medidas"], resposta: "O provador virtual usa suas medidas para sugerir o tamanho ideal. Neste MVP você pode filtrar por P, M ou G." },
+  { chaves: ["entrega", "frete", "prazo"], resposta: "A entrega é feita pela nossa logística ou você retira na loja parceira. Nos planos PLUS e PREMIUM o frete é grátis." },
+  { chaves: ["pix", "pagar", "pagamento"], resposta: "O pagamento é por Pix. Ao finalizar, geramos o código e a aprovação libera seu aluguel." },
+  { chaves: ["parceir", "loja", "divulgar", "vender"], resposta: "Lojas e pessoas podem divulgar peças na aba Divulgar e ganham comissão por cada locação." },
+  { chaves: ["higien", "limpa", "limpeza"], resposta: "Toda peça é higienizada pela loja parceira antes de cada entrega." },
+  { chaves: ["obrigad", "valeu", "tchau"], resposta: "De nada! Vista o amanhã. Hoje. 💜" }
+];
+function responderTete(pergunta) {
+  const texto = pergunta.toLowerCase();
+  for (const regra of RESPOSTAS_TETE) {
+    if (regra.chaves.some(c => texto.includes(c))) return regra.resposta;
+  }
+  return "Ainda não sei responder isso. Tente perguntar sobre preços, planos, entrega, devolução, provador ou pagamento.";
+}
+function adicionarBalao(quem, texto) {
+  const conversa = document.getElementById("conversa");
+  const balao = document.createElement("div");
+  balao.className = "balao " + quem;
+  balao.textContent = texto;
+  conversa.appendChild(balao);
+  conversa.scrollTop = conversa.scrollHeight;
+}
+function perguntarTete(pergunta) {
+  adicionarBalao("eu", pergunta);
+  adicionarBalao("tete", responderTete(pergunta));
+}
+function enviarChat(evento) {
+  evento.preventDefault();
+  const campo = document.getElementById("campoChat");
+  const pergunta = campo.value.trim();
+  if (!pergunta) return;
+  campo.value = "";
+  perguntarTete(pergunta);
+}
+function abrirChat() {
+  const conversa = document.getElementById("conversa");
+  if (!conversa.children.length) adicionarBalao("tete", "Oi! Eu sou a Tetê. Como posso ajudar você hoje?");
+  document.getElementById("janelaChat").classList.add("aberta");
+}
+
+// ==========================================
+// NAVEGAÇÃO ENTRE ABAS E ATUALIZAÇÃO DA TELA
+// ==========================================
+function trocarAba(nome) {
+  ["catalogo", "alugueis", "planos", "divulgar"].forEach(a => {
+    document.getElementById("aba-" + a).hidden = (a !== nome);
+  });
+  document.querySelectorAll(".menu button[data-aba]").forEach(b => b.classList.toggle("ativo", b.dataset.aba === nome));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function fecharJanelas() {
+  document.querySelectorAll(".janela-fundo").forEach(j => j.classList.remove("aberta"));
+}
+function atualizarTela() {
+  document.getElementById("seloCarrinho").textContent = dados.carrinho.length;
+  mostrarCatalogo();
+  desenharAlugueis();
+  desenharPlanos();
+  desenharMinhasPecas();
+  atualizarImpacto();
+}
+
+// ==========================================
+// INÍCIO DO APLICATIVO
+// ==========================================
+carregarDados();
+montarFiltros();
+atualizarTela();
+</script>
+</body>
+</html>
